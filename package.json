@@ -1,0 +1,12 @@
+{
+  "name": "auto-expand-shopify",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "@shopify/app-bridge": "^3.0.0",
+    "@shopify/app-bridge-utils": "^3.0.0",
+    "node-fetch": "^3.0.0"
+  }
+}
