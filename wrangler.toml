@@ -1,5 +1,6 @@
 name = "auto-expand-shopify"
 type = "javascript"
 
-account_id = "d6298585ea89d131e3589c82b834d95c"
+account_id = "d6298858ea89d131e3589c82b834d95c"
 compatibility_flags = ["nodejs_compat"]
+main = "src/index.js"
