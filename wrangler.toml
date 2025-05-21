@@ -1,14 +1,13 @@
 name = "auto-expand-shopify"
 type = "javascript"
 
-# あなたが GitHub Secrets に登録した CF_ACCOUNT_ID の実値
 account_id = "d6298858ea89d131e3589c82b834d95c"
-
-# Workers の互換性チェックに使いたい日付（YYYY-MM-DD）
 compatibility_date = "2025-05-21"
+compatibility_flags = ["nodejs_compat"]
 
-# エントリポイント
 main = "src/shopify.js"
 
-# Node.js 標準ライブラリを使うためのおまじない
-compatibility_flags = ["nodejs_compat"]
+[vars]
+CF_ACCOUNT_ID        = "${{ secrets.CF_ACCOUNT_ID }}"
+CLOUDFLARE_API_TOKEN = "${{ secrets.CF_API_TOKEN }}"
+SHOPIFY_WEBHOOK_SECRET = ""
