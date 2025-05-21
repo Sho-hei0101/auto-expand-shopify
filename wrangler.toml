@@ -8,7 +8,7 @@ account_id = "d6298858ea89d131e3589c82b834d95c"
 compatibility_date = "2025-05-21"
 
 # エントリポイント
-main = "src/index.js"
+main = "src/shopify.js"
 
 # Node.js 標準ライブラリを使うためのおまじない
 compatibility_flags = ["nodejs_compat"]
