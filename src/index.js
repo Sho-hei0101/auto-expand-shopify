@@ -1,68 +1,60 @@
-import { Router } from 'itty-router'
-import crypto from 'crypto'
+import { Router } from 'itty-router';
 
-// 環境変数読み込み
-const {
-  SHOPIFY_API_SECRET,
-  SHOPIFY_APP_URL
-} = process.env
+// 署名検証関数: JSONボディを読み込み、ShopifyのHMACヘッダを検証
+async function verifyHMAC(request, secret) {
+  // 1) リクエストボディを文字列として読む
+  const text = await request.text();
+  // 2) Shopifyが付ける HMAC ヘッダを取ってくる
+  const header = request.headers.get('x-shopify-hmac-sha256');
+  if (!header) return false;
+  const [algo, signature] = header.split('=');
+  if (algo !== 'sha256') return false;
 
-// Shopify HMAC 検証関数
-function verifyHMAC(rawBody, hmacHeader, secret) {
-  const hash = crypto
-    .createHmac('sha256', secret)
-    .update(rawBody, 'utf8')
-    .digest('base64')
-  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(hmacHeader))
+  // TextEncoder でバイト配列に変換
+  const enc = new TextEncoder();
+  const keyData = enc.encode(secret);
+  const msgData = enc.encode(text);
+
+  // Web Crypto API で HMAC-SHA256 用のキーボードをインポート
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  // メッセージを署名
+  const sigBuffer = await crypto.subtle.sign('HMAC', key, msgData);
+  const expected = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+  const actual   = new Uint8Array(sigBuffer);
+
+  // timingSafeEqual の有無で比較
+  return crypto.subtle.timingSafeEqual
+    ? crypto.subtle.timingSafeEqual(actual, expected)
+    : actual.every((v,i) => v === expected[i]);
 }
 
-const router = Router()
+// ★ Router セットアップ
+const router = Router();
 
-router.post('/expand', async request => {
-  // 生のリクエストボディを取得
-  const raw = await request.text()
-  const hmac = request.headers.get('x-shopify-hmac-sha256')
-  if (!verifyHMAC(raw, hmac, SHOPIFY_API_SECRET)) {
-    return new Response('Invalid HMAC', { status: 401 })
+// /expand エンドポイントを定義
+router.post('/expand', async (request, env) => {
+  // HMAC 検証
+  if (!await verifyHMAC(request, env.SHOPIFY_WEBHOOK_SECRET)) {
+    return new Response('Invalid HMAC', { status: 401 });
   }
+  // 本来の expand ロジックをここに書く
+  // 例: const body = await request.json(); …
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+});
 
-  const { product } = JSON.parse(raw)
-  const { id, title, body_html, vendor } = product
+// それ以外は 404
+router.all('*', () => new Response('Not found', { status: 404 }));
 
-  // LLM に投げるプロンプトを生成
-  const prompt = `Generate an SEO-optimized product description, tags and ALT texts for:
-Title: ${title}
-Existing Description: ${body_html}`
-
-  // ここは Ollama や Cloudflare AI などに置き換えてください
-  const aiResp = await fetch('https://api.ollama.com/v1/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'mistral-instruct', prompt })
-  })
-  const { text } = await aiResp.json()
-
-  // Shopify Admin API で商品を更新
-  const updateResp = await fetch(
-    `https://${vendor}.myshopify.com/admin/api/2025-04/products/${id}.json`,
-    {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': SHOPIFY_API_SECRET
-      },
-      body: JSON.stringify({ product: { id, body_html: text } })
-    }
-  )
-
-  if (!updateResp.ok) {
-    const err = await updateResp.text()
-    return new Response(`Shopify update failed: ${err}`, { status: 500 })
-  }
-
-  return new Response('Success', { status: 200 })
-})
-
+// Worker の fetch ハンドラをエクスポート
 export default {
-  fetch: router.handle
-}
+  fetch: (request, env) => router.handle(request, env),
+};
