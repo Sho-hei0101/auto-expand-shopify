@@ -2,5 +2,7 @@ name = "auto-expand-shopify"
 type = "javascript"
 
 account_id = "d6298858ea89d131e3589c82b834d95c"
-compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2025-05-21"
+
 main = "src/index.js"
+compatibility_flags = ["nodejs_compat"]
