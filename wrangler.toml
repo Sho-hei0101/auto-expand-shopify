@@ -1,15 +1,5 @@
 name = "auto-expand-shopify"
-main = "src/index.js"
-compatibility_date = "2025-05-20"
-account_id = "{{CF_ACCOUNT_ID}}"
-workers_dev = true
+type = "javascript"
 
-[env.production]
-route = ""
-zone_id = ""
-
-[vars]
-R2_BUCKET         = "{{R2_BUCKET}}"
-SHOPIFY_API_KEY   = "{{SHOPIFY_API_KEY}}"
-SHOPIFY_API_SECRET= "{{SHOPIFY_API_SECRET}}"
-SHOPIFY_APP_URL   = "{{SHOPIFY_APP_URL}}"
+account_id = "d6298585ea89d131e3589c82b834d95c"
+compatibility_flags = ["nodejs_compat"]
